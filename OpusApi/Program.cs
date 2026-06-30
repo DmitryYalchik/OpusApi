@@ -1,12 +1,12 @@
 using OpusApi;
-using OpusApi.Repositories;
+using OpusApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<InMemoryDbContext>();
 builder.Services.AddDbContext<SqliteDbContext>();
 
-builder.Services.AddScoped<SearcherRepository>();
+builder.Services.AddEntityRepositories();
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
