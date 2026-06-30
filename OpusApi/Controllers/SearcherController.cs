@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpusApi.DbModels;
 using OpusApi.Dtos;
+using OpusApi.Notifications;
 using OpusApi.Repositories;
 
 namespace OpusApi.Controllers;
@@ -11,7 +12,9 @@ namespace OpusApi.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
-public class SearcherController(IEntityRepository<SearcherEntity> searcherRepository) : ControllerBase
+public class SearcherController(
+    IEntityRepository<SearcherEntity> searcherRepository,
+    IEntityNotifier notifier) : ControllerBase
 {
     /// <summary>
     /// Возвращает список всех поисковиков.
@@ -70,6 +73,7 @@ public class SearcherController(IEntityRepository<SearcherEntity> searcherReposi
             return BadRequest(error);
 
         await searcherRepository.AddAsync(searcher);
+        await notifier.EntityCreatedAsync("Searcher", searcher.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = searcher.Id }, searcher.ToResponse());
     }
@@ -99,6 +103,7 @@ public class SearcherController(IEntityRepository<SearcherEntity> searcherReposi
             return BadRequest(error);
 
         await searcherRepository.Update(searcher);
+        await notifier.EntityUpdatedAsync("Searcher", searcher.Id);
 
         return NoContent();
     }
@@ -118,6 +123,7 @@ public class SearcherController(IEntityRepository<SearcherEntity> searcherReposi
             return NotFound();
 
         await searcherRepository.Delete(id);
+        await notifier.EntityDeletedAsync("Searcher", id);
 
         return NoContent();
     }

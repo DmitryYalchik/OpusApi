@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpusApi.DbModels;
 using OpusApi.Dtos;
+using OpusApi.Notifications;
 using OpusApi.Repositories;
 
 namespace OpusApi.Controllers;
@@ -11,7 +12,9 @@ namespace OpusApi.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
-public class IncidentController(IEntityRepository<IncidentEntity> incidentRepository) : ControllerBase
+public class IncidentController(
+    IEntityRepository<IncidentEntity> incidentRepository,
+    IEntityNotifier notifier) : ControllerBase
 {
     /// <summary>
     /// Возвращает все записи журнала связи в хронологическом порядке.
@@ -70,6 +73,7 @@ public class IncidentController(IEntityRepository<IncidentEntity> incidentReposi
             return BadRequest(error);
 
         await incidentRepository.AddAsync(incident);
+        await notifier.EntityCreatedAsync("Incident", incident.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident.ToResponse());
     }
@@ -99,6 +103,7 @@ public class IncidentController(IEntityRepository<IncidentEntity> incidentReposi
             return BadRequest(error);
 
         await incidentRepository.Update(incident);
+        await notifier.EntityUpdatedAsync("Incident", incident.Id);
 
         return NoContent();
     }
@@ -118,6 +123,7 @@ public class IncidentController(IEntityRepository<IncidentEntity> incidentReposi
             return NotFound();
 
         await incidentRepository.Delete(id);
+        await notifier.EntityDeletedAsync("Incident", id);
 
         return NoContent();
     }

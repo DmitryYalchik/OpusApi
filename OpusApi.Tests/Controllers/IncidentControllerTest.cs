@@ -10,6 +10,7 @@ using OpusApi.Controllers;
 using OpusApi.Dtos;
 using OpusApi.Repositories;
 using OpusApi.Tests.Environments;
+using OpusApi.Tests.Fakes;
 
 namespace OpusApi.Tests.Controllers;
 
@@ -18,13 +19,15 @@ namespace OpusApi.Tests.Controllers;
 public class IncidentControllerTest : SqliteTestBase
 {
     private IncidentEnvironment _environment = null!;
+    private FakeEntityNotifier _notifier = null!;
     private IncidentController _controller = null!;
 
     [TestInitialize]
     public void Setup()
     {
         _environment = new IncidentEnvironment(DbContext);
-        _controller = new IncidentController(new IncidentRepository(DbContext));
+        _notifier = new FakeEntityNotifier();
+        _controller = new IncidentController(new IncidentRepository(DbContext), _notifier);
     }
 
     // ----- GetAll -----
@@ -87,6 +90,11 @@ public class IncidentControllerTest : SqliteTestBase
         var stored = await verify.Incidents.FindAsync(response.Id);
         Assert.IsNotNull(stored);
         Assert.AreEqual("Штаб", stored.From);
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Incident", notification.Entity);
+        Assert.AreEqual("created", notification.Action);
+        Assert.AreEqual(response.Id, notification.Id);
     }
 
     [TestMethod]
@@ -101,6 +109,7 @@ public class IncidentControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.AreEqual(0, await verify.Incidents.CountAsync());
+        Assert.AreEqual(0, _notifier.Sent.Count); // невалидный запрос — уведомления нет
     }
 
     [TestMethod]
@@ -115,6 +124,7 @@ public class IncidentControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.AreEqual(0, await verify.Incidents.CountAsync());
+        Assert.AreEqual(0, _notifier.Sent.Count); // невалидный запрос — уведомления нет
     }
 
     // ----- Update -----
@@ -142,6 +152,11 @@ public class IncidentControllerTest : SqliteTestBase
         await using var verify = CreateContext();
         var stored = await verify.Incidents.FindAsync(seeded.Id);
         Assert.AreEqual("Новое сообщение", stored!.Message);
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Incident", notification.Entity);
+        Assert.AreEqual("updated", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 
     [TestMethod]
@@ -182,5 +197,10 @@ public class IncidentControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.IsNull(await verify.Incidents.FindAsync(seeded.Id));
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Incident", notification.Entity);
+        Assert.AreEqual("deleted", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 }

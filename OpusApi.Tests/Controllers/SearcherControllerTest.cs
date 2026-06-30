@@ -10,6 +10,7 @@ using OpusApi.Controllers;
 using OpusApi.Dtos;
 using OpusApi.Repositories;
 using OpusApi.Tests.Environments;
+using OpusApi.Tests.Fakes;
 
 namespace OpusApi.Tests.Controllers;
 
@@ -18,13 +19,15 @@ namespace OpusApi.Tests.Controllers;
 public class SearcherControllerTest : SqliteTestBase
 {
     private SearcherEnvironment _environment = null!;
+    private FakeEntityNotifier _notifier = null!;
     private SearcherController _controller = null!;
 
     [TestInitialize]
     public void Setup()
     {
         _environment = new SearcherEnvironment(DbContext);
-        _controller = new SearcherController(new SearcherRepository(DbContext));
+        _notifier = new FakeEntityNotifier();
+        _controller = new SearcherController(new SearcherRepository(DbContext), _notifier);
     }
 
     // ----- GetAll -----
@@ -87,6 +90,11 @@ public class SearcherControllerTest : SqliteTestBase
         var stored = await verify.Searchers.FindAsync(response.Id);
         Assert.IsNotNull(stored);
         Assert.AreEqual("Иванов", stored.LastName);
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Searcher", notification.Entity);
+        Assert.AreEqual("created", notification.Action);
+        Assert.AreEqual(response.Id, notification.Id);
     }
 
     [TestMethod]
@@ -100,6 +108,7 @@ public class SearcherControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.AreEqual(0, await verify.Searchers.CountAsync());
+        Assert.AreEqual(0, _notifier.Sent.Count); // невалидный запрос — уведомления нет
     }
 
     // ----- Update -----
@@ -110,6 +119,7 @@ public class SearcherControllerTest : SqliteTestBase
         var result = await _controller.Update(Guid.NewGuid(), _environment.Request());
 
         Assert.IsInstanceOfType<NotFoundResult>(result);
+        Assert.AreEqual(0, _notifier.Sent.Count);
     }
 
     [TestMethod]
@@ -134,6 +144,11 @@ public class SearcherControllerTest : SqliteTestBase
         Assert.AreEqual("Петров", stored.LastName);
         Assert.AreEqual("Иван", stored.FirstName);
         Assert.AreEqual(originalCreatedAt, stored.CreatedAt); // дата создания не затёрта при обновлении
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Searcher", notification.Entity);
+        Assert.AreEqual("updated", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 
     [TestMethod]
@@ -150,6 +165,7 @@ public class SearcherControllerTest : SqliteTestBase
         await using var verify = CreateContext();
         var stored = await verify.Searchers.FindAsync(seeded.Id);
         Assert.AreEqual("Иванов", stored!.LastName); // данные в БД не изменились
+        Assert.AreEqual(0, _notifier.Sent.Count);
     }
 
     // ----- Delete -----
@@ -160,6 +176,7 @@ public class SearcherControllerTest : SqliteTestBase
         var result = await _controller.Delete(Guid.NewGuid());
 
         Assert.IsInstanceOfType<NotFoundResult>(result);
+        Assert.AreEqual(0, _notifier.Sent.Count);
     }
 
     [TestMethod]
@@ -173,5 +190,10 @@ public class SearcherControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.IsNull(await verify.Searchers.FindAsync(seeded.Id));
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Searcher", notification.Entity);
+        Assert.AreEqual("deleted", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 }

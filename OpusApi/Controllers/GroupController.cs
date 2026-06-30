@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OpusApi.DbModels;
 using OpusApi.Dtos;
+using OpusApi.Notifications;
 using OpusApi.Repositories;
 
 namespace OpusApi.Controllers;
@@ -11,7 +12,9 @@ namespace OpusApi.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
-public class GroupController(IEntityRepository<GroupEntity> groupRepository) : ControllerBase
+public class GroupController(
+    IEntityRepository<GroupEntity> groupRepository,
+    IEntityNotifier notifier) : ControllerBase
 {
     /// <summary>
     /// Возвращает список всех групп вместе с входящими в них поисковиками.
@@ -70,6 +73,7 @@ public class GroupController(IEntityRepository<GroupEntity> groupRepository) : C
             return BadRequest(error);
 
         await groupRepository.AddAsync(group);
+        await notifier.EntityCreatedAsync("Group", group.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = group.Id }, group.ToResponse());
     }
@@ -99,6 +103,7 @@ public class GroupController(IEntityRepository<GroupEntity> groupRepository) : C
             return BadRequest(error);
 
         await groupRepository.Update(group);
+        await notifier.EntityUpdatedAsync("Group", group.Id);
 
         return NoContent();
     }
@@ -118,6 +123,7 @@ public class GroupController(IEntityRepository<GroupEntity> groupRepository) : C
             return NotFound();
 
         await groupRepository.Delete(id);
+        await notifier.EntityDeletedAsync("Group", id);
 
         return NoContent();
     }

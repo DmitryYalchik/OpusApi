@@ -10,6 +10,7 @@ using OpusApi.Controllers;
 using OpusApi.Dtos;
 using OpusApi.Repositories;
 using OpusApi.Tests.Environments;
+using OpusApi.Tests.Fakes;
 
 namespace OpusApi.Tests.Controllers;
 
@@ -18,13 +19,15 @@ namespace OpusApi.Tests.Controllers;
 public class GroupControllerTest : SqliteTestBase
 {
     private GroupEnvironment _environment = null!;
+    private FakeEntityNotifier _notifier = null!;
     private GroupController _controller = null!;
 
     [TestInitialize]
     public void Setup()
     {
         _environment = new GroupEnvironment(DbContext);
-        _controller = new GroupController(new GroupRepository(DbContext));
+        _notifier = new FakeEntityNotifier();
+        _controller = new GroupController(new GroupRepository(DbContext), _notifier);
     }
 
     // ----- GetAll -----
@@ -81,7 +84,7 @@ public class GroupControllerTest : SqliteTestBase
         // Читаем через свежий контекст, чтобы Include реально доставал состав из БД,
         // а не из change-tracker'а.
         await using var verify = CreateContext();
-        var controller = new GroupController(new GroupRepository(verify));
+        var controller = new GroupController(new GroupRepository(verify), _notifier);
 
         var result = await controller.GetById(group.Id);
 
@@ -105,6 +108,11 @@ public class GroupControllerTest : SqliteTestBase
         var stored = await verify.Groups.FindAsync(response.Id);
         Assert.IsNotNull(stored);
         Assert.AreEqual("Группа №1", stored.Name);
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Group", notification.Entity);
+        Assert.AreEqual("created", notification.Action);
+        Assert.AreEqual(response.Id, notification.Id);
     }
 
     [TestMethod]
@@ -126,6 +134,7 @@ public class GroupControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.AreEqual(0, await verify.Groups.CountAsync());
+        Assert.AreEqual(0, _notifier.Sent.Count); // невалидный запрос — уведомления нет
     }
 
     // ----- Update -----
@@ -150,6 +159,11 @@ public class GroupControllerTest : SqliteTestBase
         await using var verify = CreateContext();
         var stored = await verify.Groups.FindAsync(seeded.Id);
         Assert.AreEqual("Группа №2", stored!.Name);
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Group", notification.Entity);
+        Assert.AreEqual("updated", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 
     [TestMethod]
@@ -187,5 +201,10 @@ public class GroupControllerTest : SqliteTestBase
 
         await using var verify = CreateContext();
         Assert.IsNull(await verify.Groups.FindAsync(seeded.Id));
+
+        var notification = _notifier.Sent.Single();
+        Assert.AreEqual("Group", notification.Entity);
+        Assert.AreEqual("deleted", notification.Action);
+        Assert.AreEqual(seeded.Id, notification.Id);
     }
 }
