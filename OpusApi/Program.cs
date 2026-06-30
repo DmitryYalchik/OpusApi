@@ -1,3 +1,5 @@
+using System.Reflection;
+using Microsoft.OpenApi;
 using OpusApi;
 using OpusApi.Extensions;
 
@@ -15,7 +17,25 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 
 
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Opus API",
+        Version = "v1",
+        Description = "API приложения «Опус» — цифрового журнала оператора узла связи " +
+                      "поисково-спасательного отряда ЛизаАлерт."
+    });
+
+    // Подключаем XML-документацию из сборки, чтобы описания методов и моделей
+    // отображались в Swagger UI.
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
+});
 
 
 var app = builder.Build();

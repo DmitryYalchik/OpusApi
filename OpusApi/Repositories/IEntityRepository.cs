@@ -17,5 +17,5 @@ public interface IEntityRepository<T> where T : IdentityModel
     Task Delete(Guid id);
     
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
-    Task<int> CountAsync(Expression<Func<T, bool>> predicate = null);
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 }

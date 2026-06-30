@@ -5,6 +5,10 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <!-- Генерируем XML-файл с документацией, чтобы Swagger показывал описания -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- 1591: не требуем XML-комментарии для каждого public-члена (репозитории, инфраструктура) -->
+        <NoWarn>$(NoWarn);1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

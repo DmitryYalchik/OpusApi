@@ -7,6 +7,7 @@ public sealed class SqliteDbContext : DbContext
 {
     public DbSet<SearcherEntity> Searchers => Set<SearcherEntity>();
     public DbSet<GroupEntity> Groups => Set<GroupEntity>();
+    public DbSet<IncidentEntity> Incidents => Set<IncidentEntity>();
     
     public SqliteDbContext() => Database.EnsureCreated();
     
