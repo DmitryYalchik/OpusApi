@@ -4,6 +4,7 @@
 
 **Backend для приложения «Опус» — цифрового журнала оператора узла связи**
 
+[![.NET CI](https://github.com/DmitryYalchik/OpusApi/actions/workflows/dotnet.yml/badge.svg)](https://github.com/DmitryYalchik/OpusApi/actions/workflows/dotnet.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-13-239120?logo=csharp&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
 [![EF Core](https://img.shields.io/badge/EF%20Core-10.0-512BD4)](https://learn.microsoft.com/ef/core/)
