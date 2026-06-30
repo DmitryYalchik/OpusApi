@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using OpusApi.DbModels;
+using OpusApi.Dtos;
 using OpusApi.Repositories;
 
 namespace OpusApi.Controllers;
@@ -10,7 +11,7 @@ namespace OpusApi.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
-public class SearcherController(SearcherRepository searcherRepository) : ControllerBase
+public class SearcherController(IEntityRepository<SearcherEntity> searcherRepository) : ControllerBase
 {
     /// <summary>
     /// Возвращает список всех поисковиков.
@@ -19,14 +20,16 @@ public class SearcherController(SearcherRepository searcherRepository) : Control
     /// <response code="200">Список поисковиков успешно получен.</response>
     /// <response code="204">Поисковики ещё не заведены.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<SearcherEntity>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<SearcherResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<ActionResult<IEnumerable<SearcherEntity>>> GetAll()
+    public async Task<ActionResult<IEnumerable<SearcherResponse>>> GetAll()
     {
-        if (await searcherRepository.CountAsync() == 0)
+        var searchers = await searcherRepository.GetAllAsync();
+
+        if (searchers is null || !searchers.Any())
             return NoContent();
 
-        return Ok(await searcherRepository.GetAllAsync());
+        return Ok(searchers.Select(s => s.ToResponse()));
     }
 
     /// <summary>
@@ -37,43 +40,45 @@ public class SearcherController(SearcherRepository searcherRepository) : Control
     /// <response code="200">Поисковик найден.</response>
     /// <response code="404">Поисковик с указанным идентификатором не найден.</response>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(SearcherEntity), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SearcherResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<SearcherEntity>> GetById(Guid id)
+    public async Task<ActionResult<SearcherResponse>> GetById(Guid id)
     {
         var searcher = await searcherRepository.GetByIdAsync(id);
 
         if (searcher == null)
             return NotFound();
 
-        return Ok(searcher);
+        return Ok(searcher.ToResponse());
     }
 
     /// <summary>
     /// Создаёт нового поисковика.
     /// </summary>
-    /// <param name="searcher">Данные поисковика.</param>
+    /// <param name="request">Данные поисковика.</param>
     /// <returns>Созданный поисковик с присвоенным идентификатором.</returns>
     /// <response code="201">Поисковик успешно создан.</response>
     /// <response code="400">Данные поисковика не прошли валидацию.</response>
     [HttpPost]
-    [ProducesResponseType(typeof(SearcherEntity), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(SearcherResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<SearcherEntity>> Create([FromBody] SearcherEntity searcher)
+    public async Task<ActionResult<SearcherResponse>> Create([FromBody] SearcherRequest request)
     {
+        var searcher = request.ToEntity();
+
         if (!searcher.Validate(out var error))
             return BadRequest(error);
 
         await searcherRepository.AddAsync(searcher);
 
-        return CreatedAtAction(nameof(GetById), new { id = searcher.Id }, searcher);
+        return CreatedAtAction(nameof(GetById), new { id = searcher.Id }, searcher.ToResponse());
     }
 
     /// <summary>
     /// Обновляет данные существующего поисковика.
     /// </summary>
     /// <param name="id">Идентификатор обновляемого поисковика.</param>
-    /// <param name="searcher">Новые данные поисковика.</param>
+    /// <param name="request">Новые данные поисковика.</param>
     /// <response code="204">Поисковик успешно обновлён.</response>
     /// <response code="400">Данные поисковика не прошли валидацию.</response>
     /// <response code="404">Поисковик с указанным идентификатором не найден.</response>
@@ -81,15 +86,17 @@ public class SearcherController(SearcherRepository searcherRepository) : Control
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] SearcherEntity searcher)
+    public async Task<IActionResult> Update(Guid id, [FromBody] SearcherRequest request)
     {
-        searcher.Id = id;
+        var searcher = await searcherRepository.GetByIdAsync(id);
+
+        if (searcher == null)
+            return NotFound();
+
+        request.ApplyTo(searcher);
 
         if (!searcher.Validate(out var error))
             return BadRequest(error);
-
-        if (!await searcherRepository.ExistsAsync(x => x.Id == id))
-            return NotFound();
 
         await searcherRepository.Update(searcher);
 

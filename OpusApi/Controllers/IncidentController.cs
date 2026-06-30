@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using OpusApi.DbModels;
+using OpusApi.Dtos;
 using OpusApi.Repositories;
 
 namespace OpusApi.Controllers;
@@ -10,7 +11,7 @@ namespace OpusApi.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces("application/json")]
-public class IncidentController(IncidentRepository incidentRepository) : ControllerBase
+public class IncidentController(IEntityRepository<IncidentEntity> incidentRepository) : ControllerBase
 {
     /// <summary>
     /// Возвращает все записи журнала связи в хронологическом порядке.
@@ -19,14 +20,16 @@ public class IncidentController(IncidentRepository incidentRepository) : Control
     /// <response code="200">Записи журнала успешно получены.</response>
     /// <response code="204">Журнал пуст.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<IncidentEntity>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<IncidentResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<ActionResult<IEnumerable<IncidentEntity>>> GetAll()
+    public async Task<ActionResult<IEnumerable<IncidentResponse>>> GetAll()
     {
-        if (await incidentRepository.CountAsync() == 0)
+        var incidents = await incidentRepository.GetAllAsync();
+
+        if (incidents is null || !incidents.Any())
             return NoContent();
 
-        return Ok(await incidentRepository.GetAllAsync());
+        return Ok(incidents.Select(i => i.ToResponse()));
     }
 
     /// <summary>
@@ -37,43 +40,45 @@ public class IncidentController(IncidentRepository incidentRepository) : Control
     /// <response code="200">Запись найдена.</response>
     /// <response code="404">Запись с указанным идентификатором не найдена.</response>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(IncidentEntity), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IncidentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IncidentEntity>> GetById(Guid id)
+    public async Task<ActionResult<IncidentResponse>> GetById(Guid id)
     {
         var incident = await incidentRepository.GetByIdAsync(id);
 
         if (incident == null)
             return NotFound();
 
-        return Ok(incident);
+        return Ok(incident.ToResponse());
     }
 
     /// <summary>
     /// Добавляет новую запись в журнал связи.
     /// </summary>
-    /// <param name="incident">Данные записи журнала.</param>
+    /// <param name="request">Данные записи журнала.</param>
     /// <returns>Созданная запись с присвоенным идентификатором.</returns>
     /// <response code="201">Запись успешно добавлена.</response>
     /// <response code="400">Данные записи не прошли валидацию.</response>
     [HttpPost]
-    [ProducesResponseType(typeof(IncidentEntity), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(IncidentResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IncidentEntity>> Create([FromBody] IncidentEntity incident)
+    public async Task<ActionResult<IncidentResponse>> Create([FromBody] IncidentRequest request)
     {
+        var incident = request.ToEntity();
+
         if (!incident.Validate(out var error))
             return BadRequest(error);
 
         await incidentRepository.AddAsync(incident);
 
-        return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident);
+        return CreatedAtAction(nameof(GetById), new { id = incident.Id }, incident.ToResponse());
     }
 
     /// <summary>
     /// Обновляет существующую запись журнала.
     /// </summary>
     /// <param name="id">Идентификатор обновляемой записи.</param>
-    /// <param name="incident">Новые данные записи.</param>
+    /// <param name="request">Новые данные записи.</param>
     /// <response code="204">Запись успешно обновлена.</response>
     /// <response code="400">Данные записи не прошли валидацию.</response>
     /// <response code="404">Запись с указанным идентификатором не найдена.</response>
@@ -81,15 +86,17 @@ public class IncidentController(IncidentRepository incidentRepository) : Control
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] IncidentEntity incident)
+    public async Task<IActionResult> Update(Guid id, [FromBody] IncidentRequest request)
     {
-        incident.Id = id;
+        var incident = await incidentRepository.GetByIdAsync(id);
+
+        if (incident == null)
+            return NotFound();
+
+        request.ApplyTo(incident);
 
         if (!incident.Validate(out var error))
             return BadRequest(error);
-
-        if (!await incidentRepository.ExistsAsync(x => x.Id == id))
-            return NotFound();
 
         await incidentRepository.Update(incident);
 
