@@ -35,7 +35,7 @@ public class SearcherEntity : IdentityModel
     public string PhoneNumber { get; set; } = null!;
 
     /// <summary>Группы, в которых состоит поисковик.</summary>
-    public IEnumerable<GroupEntity> Groups { get; set; } = [];
+    public ICollection<GroupEntity> Groups { get; set; } = [];
 
     /// <inheritdoc />
     public override bool Validate(out string? errorMessage)

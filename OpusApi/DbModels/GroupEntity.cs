@@ -15,7 +15,7 @@ public class GroupEntity : IdentityModel
     public string Name { get; set; } = string.Empty;
 
     /// <summary>Поисковики, входящие в группу.</summary>
-    public IEnumerable<SearcherEntity> Searchers { get; set; } = [];
+    public ICollection<SearcherEntity> Searchers { get; set; } = [];
 
     /// <inheritdoc />
     public override bool Validate(out string? errorMessage)

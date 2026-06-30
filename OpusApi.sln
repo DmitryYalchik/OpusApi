@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		compose.yaml = compose.yaml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpusApi.Tests", "OpusApi.Tests\OpusApi.Tests.csproj", "{A996983A-BF6E-4110-9289-AB08E2FFFA27}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,5 +19,9 @@ Global
 		{568CFD45-1CA6-4298-A4B8-CBF850FA38C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{568CFD45-1CA6-4298-A4B8-CBF850FA38C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{568CFD45-1CA6-4298-A4B8-CBF850FA38C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A996983A-BF6E-4110-9289-AB08E2FFFA27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A996983A-BF6E-4110-9289-AB08E2FFFA27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A996983A-BF6E-4110-9289-AB08E2FFFA27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A996983A-BF6E-4110-9289-AB08E2FFFA27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
