@@ -1,0 +1,6 @@
+@OpusApi_HostAddress = http://localhost:5261
+
+GET {{OpusApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

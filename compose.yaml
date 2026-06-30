@@ -1,0 +1,7 @@
+﻿services:
+  opusapi:
+    image: opusapi
+    build:
+      context: .
+      dockerfile: OpusApi/Dockerfile
+
